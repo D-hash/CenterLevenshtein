@@ -1,8 +1,53 @@
+import random
 import gurobipy as gb
 from gurobipy import GRB
 import numpy as np
 from tqdm import tqdm
+import itertools
 
+def levenshtein(s1, s2):
+    if len(s1) < len(s2):
+        return levenshtein(s2, s1)
+
+    if len(s2) == 0:
+        return len(s1)
+
+    previous_row = range(len(s2) + 1)
+    for i, c1 in enumerate(s1):
+        current_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            insertions = previous_row[
+                             j + 1] + 1  # j+1 instead of j since previous_row and current_row are one character longer
+            deletions = current_row[j] + 1  # than s2
+            substitutions = previous_row[j] + (c1 != c2)
+            current_row.append(min(insertions, deletions, substitutions))
+        previous_row = current_row
+
+    return previous_row[-1]
+
+def enumeration_median(string_length, stringpoolinit): # comparazione con enumerazione
+    random.seed(2025)
+    permutations = ["".join(seq) for seq in itertools.product("01", repeat=string_length)]
+    enum_lev_dist = []
+    stringpool = []
+    for sampled in stringpoolinit:
+            stringpool.append(sampled[:len(sampled)-random.randint(0,int(len(sampled)/2))])
+    #print(permutations)
+    for string in permutations:
+        enum_lev_dist.append([])
+        for sampled in stringpool:
+            sampled = sampled[:len(sampled)-random.randint(0,len(sampled))]
+            enum_lev_dist[-1].append(levenshtein(string, sampled))
+    #print(enum_lev_dist)
+    sum_in_cluster = [sum(vec) for vec in enum_lev_dist]
+    enum_solution = 100000000
+    enum_opt_string = ''
+    for idx, e in enumerate(sum_in_cluster):
+        if enum_solution >= e:
+            enum_solution = e
+            enum_opt_string = permutations[idx]
+
+    return enum_opt_string, enum_solution
 
 def generate_y(n, ray): # genero indici archi costosi
     y_vars = []
@@ -49,9 +94,9 @@ with open("result_extended_enhanced.txt", "a") as file:
 
 print("### STARTING EXTENDED ENHANCED ###")
 
-for stringlength in range(50,60,10):
-    for stringnumber in range(20,30,10):
-        for it in range(1):
+for stringlength in range(10,40,10):
+    for stringnumber in range(100,110,10):
+        for it in range(4,5):
             for seed in [2025]:
                 # Initialize variables
                 n, m, sigma = None, None, None
@@ -65,8 +110,10 @@ for stringlength in range(50,60,10):
                 m = int(lines[1].split("=")[1].strip())
                 
                 # Extract sigma (from line index 3 onwards)
-                sigma = np.array([list(map(int, line.split())) for line in lines[3:]])
-                
+                sigma = ["".join(str(v) for v in list(map(int, line.split()))) for line in lines[3:]]
+                print(list(sigma))
+                print(enumeration_median(5, sigma))
+                assert(False)
                 # Print to verify
                 print(f"Instance_{stringlength}_{stringnumber}_{it}.txt")
                 print(f"n = {n}")
@@ -122,7 +169,7 @@ for stringlength in range(50,60,10):
                 slant_arcs_vars = []
                 full_arcs_vars = []
                 cost_y = generate_y(string_length, upper_bound // 2) #upper_bound // 2 #2
-                arcs, costs = gb.multidict({arc: 1 for arc in cost_y})
+                arcs, costs = gb.multidict({arc: 1 if arc[0][0] + 1 == arc[1][0] and arc[0][1] + 1 == arc[1][1] else 2 for arc in cost_y})
                 nodes = generate_nodes(cost_y)
 
                 for idx, word in tqdm(enumerate(stringpool)):

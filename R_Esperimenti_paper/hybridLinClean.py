@@ -4,7 +4,7 @@ import numpy as np
 import math
 
 #num Instances
-I = 5
+I = 1
 
 #Set result file
 with open("result_hybrid_lin_clean.txt", "a") as file:
@@ -13,15 +13,15 @@ with open("result_hybrid_lin_clean.txt", "a") as file:
 print("### STARTING HYBRID ###")
 
 
-for stringlength in range(50,60,10):
-    for stringnumber in range(20,30,10):
+for stringlength in range(10,20,10):
+    for stringnumber in range(10,20,10):
         for it in range(1):
             for seed in [2025]:
                 # Initialize variables
                 n, m, sigma = None, None, None
                 
                 # Read the file
-                with open(f"I_{stringlength}_{stringnumber}_{it}.txt", "r") as f:  # Corrected
+                with open(f"I_{stringlength}_{stringnumber}_{1}.txt", "r") as f:  # Corrected
                     lines = f.readlines()
                 
                 # Extract n and m
@@ -69,12 +69,12 @@ for stringlength in range(50,60,10):
                 #print(arc)
 
                 cost = {
-                    (p, q): (source[q] - source[p] + dest[q] - dest[p]) - 2 for (p, q) in arc
+                    (p, q): (source[q] - source[p]-1) + (dest[q] - dest[p] - 1) for (p, q) in arc
                 } #if (source[q] - source[p] + dest[q] - dest[p]) - 2 < n/2
                     
                 # Start and finish costs
                 startcost = {p: source[p] + dest[p] for p in P} #-2 removed, P starts from 0
-                finishcost = {p: 2*(n-1) - source[p] - dest[p] for p in P} #2n removed, P starts from 0
+                finishcost = {p: (2*(n-1) - source[p] - dest[p]) for p in P} #2n removed, P starts from 0
 
                 
                 # Model
@@ -83,7 +83,7 @@ for stringlength in range(50,60,10):
 
                 #OPTIONS
                 use_ub = 0 #1 to enable upper bound on c^k_i variables
-                heuristic = 0 #1 to enable preliminary primal heuristic
+                heuristic = 0 #1 to enablevsl3 preliminary primal heuristic
                 
                 # Variables
                 x = {}

@@ -41,7 +41,7 @@ def generate_nodes(y): # genero indici nodi
 
 
 #num Instances
-I = 5
+I = 1
 
 #Set result file
 with open("result_extended_vanilla.txt", "a") as file:
@@ -50,15 +50,15 @@ with open("result_extended_vanilla.txt", "a") as file:
 print("### STARTING EXTENDED VANILLA ###")
 
 
-for stringlength in range(10,60,10):
-    for stringnumber in range(10,110,10):
+for stringlength in range(10,20,10):
+    for stringnumber in range(10,20,10):
         for it in range(I):
-            for seed in [2025, 111, 923821]:
+            for seed in [2025]:
                 # Initialize variables
                 n, m, sigma = None, None, None
                 
                 # Read the file
-                with open(f"I_{stringlength}_{stringnumber}_{it}.txt", "r") as f:  # Corrected
+                with open(f"I_{stringlength}_{stringnumber}_{1}.txt", "r") as f:  # Corrected
                     lines = f.readlines()
                 
                 # Extract n and m
@@ -123,7 +123,7 @@ for stringlength in range(10,60,10):
                 slant_arcs_vars = []
                 full_arcs_vars = []
                 cost_y = generate_y(string_length, upper_bound // 2) #upper_bound // 2 #2
-                arcs, costs = gb.multidict({arc: 1 for arc in cost_y})
+                arcs, costs = gb.multidict({arc: 1 if arc[0][0] + 1 == arc[1][0] and arc[0][1] + 1 == arc[1][1] else 2 for arc in cost_y})
                 nodes = generate_nodes(cost_y)
 
                 for idx, word in tqdm(enumerate(stringpool)):

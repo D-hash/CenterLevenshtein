@@ -26,13 +26,13 @@ import time
 I = 5
 
 #Set result file
-with open("result_matching_linear.txt", "a") as file:
+with open("result_matching_linear_weighted.txt", "a") as file:
     file.write(f"Instance,Seed,Best Incumbent,BestBound,SolutionTime,GAP,Nodes,SimplexIterations,Surrogate,All_cuts,only_root_frac_cuts,use_pool,#cuts,#clique_cuts,#no_del_add_cuts,#no_crossing,#continuity_cuts,#heur_cliques,#lin_incomp_cuts,\n")
 
 print("### STARTING MATCHING LINEAR ###")
 
 
-for stringlength in range(10,60,10):
+for stringlength in range(10,30,10):
     for stringnumber in range(10,110,10):
         for it in range(I):
             for seed in [2025, 111, 923821]:
@@ -141,7 +141,7 @@ for stringlength in range(10,60,10):
                             
                 # Objective function (as defined in the paper's model)
                 model.setObjective(
-                    gp.quicksum(mk[k, i, j] for i in range(n) for j in range(n) for k in range(m)) + gp.quicksum(dk[k,i] for i in range(n) for k in range(m)) + gp.quicksum(ak[k,i] for i in range(n) for k in range(m)),
+                    gp.quicksum(mk[k, i, j] for i in range(n) for j in range(n) for k in range(m)) + 0.65*gp.quicksum(dk[k,i] for i in range(n) for k in range(m)) + 0.65*gp.quicksum(ak[k,i] for i in range(n) for k in range(m)),
                     GRB.MINIMIZE
                 )
 
@@ -721,7 +721,7 @@ for stringlength in range(10,60,10):
                 # Print the cuts added during the process
                 #print_cuts()
                 
-                with open("result_matching_linear.txt", "a") as file:
+                with open("result_matching_linear_weighted.txt", "a") as file:
                     # Collect results
                     best_incumbent = model.ObjVal if model.SolCount > 0 else "NFS" #no feasible solution
                     best_bound = model.ObjBound if model.Status in [GRB.OPTIMAL, GRB.TIME_LIMIT] else "N/A"
