@@ -1,7 +1,6 @@
 import gurobipy as gp
 from gurobipy import GRB
-import numpy as np
-import sys
+
 def levenshtein(s1, s2):
     if len(s1) < len(s2):
         return levenshtein(s2, s1)
@@ -14,8 +13,8 @@ def levenshtein(s1, s2):
         current_row = [i + 1]
         for j, c2 in enumerate(s2):
             insertions = previous_row[
-                             j + 1] + 1  # j+1 instead of j since previous_row and current_row are one character longer
-            deletions = current_row[j] + 1  # than s2
+                             j + 1] + 1
+            deletions = current_row[j] + 1  
             substitutions = previous_row[j] + (c1 != c2)
             current_row.append(min(insertions, deletions, substitutions))
         previous_row = current_row
@@ -39,21 +38,15 @@ def readStrings(filepath):
 #num Instances
 I = 3
 
-#ecc = sys.argv[1]
-#Set result file
 with open(f"result_hayashida_binary_sum.txt", "a") as file:
     file.write(f"Instance,Seed,BestIncumbent,BestBound,SolutionTime,GAP,Nodes,SimplexIterations,CenterString\n")
 
 for stringlength in [5, 10, 15, 20]:
-    for stringnumber in [10,20,30, 40, 50]:
-# for stringlength in [5]:
-#      for stringnumber in [5]:
+    for stringnumber in [10, 20, 30, 40, 50]:
         for it in range(I):
             for seed in [2025]:
-                 # Initialize variables
                 n, m, sigma = None, None, None
                 
-                # Read the file
                 strings = readStrings(f"I_{stringlength}_{stringnumber}_{it}.txt")
                 alphabet = {1:"0", 2: "1"}
                 print(f"I_{stringlength}_{stringnumber}_{it}.txt")
@@ -131,7 +124,6 @@ for stringlength in [5, 10, 15, 20]:
                         model.addConstr(y[k,nk,j] >= 1/max_len*(j-l), name=f"b_{k}_{j}")
                 model.optimize()
 
-                # Extract solution
                 if model.SolCount > 0:
 
                     median_string = ''.join(alphabet[int(t[j].X)] for j in range(1,max_len) if j < int(l.X)+1)
@@ -145,7 +137,6 @@ for stringlength in [5, 10, 15, 20]:
                     gap = model.MIPGap
                     nodes = model.NodeCount
                     simplexiters = model.IterCount
-                    # Write results in a single row format
                     file.write(f"I_{stringlength}_{stringnumber}_{it}.txt,{seed},{best_incumbent},{best_bound},{solution_time},{gap},{nodes},{simplexiters},{median_string}\n")
 
 

@@ -1,12 +1,8 @@
 import gurobipy as gb
 from gurobipy import GRB
-import numpy as np
 from tqdm import tqdm
-import sys
-from Levenshtein import median, median_improve, distance as lev_distance
-import time
 
-def generate_y(nk, n, ray): # genero indici archi costosi
+def generate_y(nk, n, ray):
     y_vars = []
     for f_index in range(nk+1):
         for s_index in range(n+1):
@@ -21,7 +17,7 @@ def generate_y(nk, n, ray): # genero indici archi costosi
     return y_vars
 
 
-def generate_ye(word, nk, n, ray): # genero indici archi gratis
+def generate_ye(word, nk, n, ray):
     y_vars = []
     for f_index in range(nk+1):
         for s_index in range(n+1):
@@ -32,7 +28,7 @@ def generate_ye(word, nk, n, ray): # genero indici archi gratis
     return y_vars
 
 
-def generate_nodes(y): # genero indici nodi
+def generate_nodes(y):
     nodes = set()
     for arc in y:
         if arc[0] not in nodes:
@@ -41,30 +37,20 @@ def generate_nodes(y): # genero indici nodi
             nodes.add(arc[1])
     return list(nodes)
 
-def find_median_string(str_list, improve_steps=0):
-    med = median(str_list)
-    for _ in range(improve_steps):
-        med = median_improve(med, str_list)
-    return med
-
 #num Instances
 I = 3
-#ecc = sys.argv[1]
 #Set result file
-with open(f"result_extended_binary_2n_warm.txt", "a") as file:
-    #file.write(f"Instance,Seed,Best Incumbent,BestBound,SolutionTime,GAP,Nodes,SimplexIterations,full_lazy,b&c,only_root_frac_cuts,use_pool,all_cuts,#cliqueineq\n")
+with open(f"result_extended_binary_2n.txt", "a") as file:
     file.write(f"Instance,Seed,Best Incumbent,BestBound,SolutionTime,GAP,Nodes,SimplexIterations,Median\n")
 
-print("### STARTING EXTENDED VANILLA ###")
+print("### STARTING EXTENDED ###")
 
 for stringlength in [5, 10, 15, 20]:
     for stringnumber in [10, 20, 30, 40, 50]:
-# for stringlength in [5]:      
-#      for stringnumber in [5]:
         for it in range(I):
             for seed in [2025]:
                 # -------------------------------------------------
-                # Read input as in your quadratic model
+                # Read input 
                 # -------------------------------------------------
                 n, m, sigma = None, None, None
 
@@ -77,31 +63,16 @@ for stringlength in [5, 10, 15, 20]:
 
                 n = max(len(s) for s in sigma)
                 n = 2*n
-                heutime = -time.time()
-                heumedian = find_median_string(sigmas, 100)
-                heutime += time.time()
-                # Print to verify
                 print(f"Instance_{stringlength}_{stringnumber}_{it}.txt")
                 print(f"n = {n}")
                 print(f"m = {m}")
                 print("sigma =\n", sigma)
                 
-                # Create a new Gurobi model
                 model = gb.Model("extended binary")
-
-                #OPTIONS 
-                full_lazy = 0 #1 use the clique inequalities as lazy (DO NOT SET full_lazy and branch_and_cut both to 1)
-                branch_and_cut = 0 #1 use cutting plane for clique inequalities
-                only_root_frac_cuts = 0 #1 to add fractional cuts only at root node, requires branch_and_cut = 1
-                use_pool = 0 #1 compute beforehand the clique inequalities, 0 otherwise (need branch_and_cut = 1 to be effective)
-                all_cuts = 0 #1 add all violated cuts, 0 only the most violated one
-                print_lps = 0 # print all lps, no solve of the model. Set branch_and_cut = 0
 
                 string_length = n
                 string_number = m
-                branch = 0
                 stringpool = sigma
-                crlb = 0
                 upper_bound = n
                 obj = 1 #median
 
@@ -111,12 +82,7 @@ for stringlength in [5, 10, 15, 20]:
                 for i in range(n):
                     name = f"x_{i}"
                     x[i] = model.addVar(vtype=GRB.BINARY, name=name)
-                for idx, c in enumerate(heumedian):
-                    x[idx].Start = int(c)
-                if branch:
-                    for i in x:
-                        x[i].setAttr("BranchPriority", 100)
-                
+
                 median_lhs = gb.LinExpr()
                 slant_arcs = []
                 full_arcs = []
@@ -135,11 +101,10 @@ for stringlength in [5, 10, 15, 20]:
 
                 for idx, word in tqdm(enumerate(stringpool)):
                     nk = len(word)
-                    cost_y = generate_y(nk, string_length, upper_bound) #upper_bound // 2 #2
+                    cost_y = generate_y(nk, string_length, upper_bound) 
                     arcs, costs = gb.multidict({arc: 1 if arc[0][0] + 1 == arc[1][0] and arc[0][1] + 1 == arc[1][1] else 1 for arc in cost_y})
                     nodes = generate_nodes(cost_y)
-                    #print("String", idx, ":", word)
-                    diagonal_cost_y = generate_ye(word, nk, string_length, upper_bound) #upper_bound // 2 #
+                    diagonal_cost_y = generate_ye(word, nk, string_length, upper_bound)
                     ye, ye_costs = gb.multidict({arc: 0 for arc in diagonal_cost_y})
 
                     slant_arcs.append(ye)
@@ -158,9 +123,8 @@ for stringlength in [5, 10, 15, 20]:
                     )
                     slant_arcs_vars.append(list(zero_cost_flow.values()))
                     full_arcs_vars.append(list(flow.values()))
-                    # Attivazione delle colonne tramite u_k
                     for arc in arcs:
-                        j = arc[1][1]   # colonna di arrivo
+                        j = arc[1][1]  
                         if p <= j <= q:
                             model.addConstr(flow[arc] <= u[j], name=f"act_full_{idx}_{j}")
 
@@ -207,28 +171,23 @@ for stringlength in [5, 10, 15, 20]:
 
                         i, j = node
 
-                        # Check arc existence before using it
                         arc_left  = ((i, j-1), (i, j))
                         arc_down  = ((i+1, j), (i, j))
                         arc_up    = ((i-1, j), (i, j))
                         arc_right = ((i, j), (i, j+1))
 
-                        # First pattern: left + down
                         if arc_left in arcs and arc_down in arcs:
                             model.addConstr(flow[arc_left] + flow[arc_down] <= 1)
 
-                        # Second pattern: up + right
                         if arc_up in arcs and arc_right in arcs:
                             model.addConstr(flow[arc_up] + flow[arc_right] <= 1)
 
-                    # Sbilanciamento finale sui nodi (nk, k)
                     for k in range(p, q):
                         outflow = gb.LinExpr()
                         inflow = gb.LinExpr()
 
                         node = (nk, k)
 
-                        # Archi entranti e uscenti
                         for arc in arcs:
                             if arc[0] == node:
                                 outflow += flow[arc]
@@ -244,7 +203,6 @@ for stringlength in [5, 10, 15, 20]:
                         model.addConstr(inflow - outflow == u[k] - u[k+1],
                                         name=f"sink_{idx}_{k}")
 
-                    # Ultima colonna q
                     outflow = gb.LinExpr()
                     inflow = gb.LinExpr()
                     node = (nk, q)
@@ -267,12 +225,6 @@ for stringlength in [5, 10, 15, 20]:
                         ### Median problem ###
                         median_lhs += flow.prod(costs) + zero_cost_flow.prod(ye_costs)
                         model.setObjective(median_lhs)
-                    # else:
-                    #     ### Radius problem ###
-                    #     model.addConstr(flow.prod(costs) + zero_cost_flow.prod(ye_costs) <= d, name="distance" + str(idx))
-                    #     model.setObjective(d)
-                    
-                    # print('Work done for string', idx)
                             
                     model.update()
                                     
@@ -306,7 +258,7 @@ for stringlength in [5, 10, 15, 20]:
                 total_gap = model.MIPGap
                 total_nodes = model.NodeCount
                 total_simplexiters = model.IterCount
-                with open(f"result_extended_binary_2n_warm.txt", "a") as file:
+                with open(f"result_extended_binary_2n.txt", "a") as file:
                     # Write results in a single row format
                     file.write(f"I_{stringlength}_{stringnumber}_{it}.txt,{seed},{total_best_incumbent},{total_best_bound},{total_solution_time},{total_gap},{total_nodes},{total_simplexiters},{total_center_string}\n")
             
