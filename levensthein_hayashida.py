@@ -47,7 +47,7 @@ for stringlength in [5, 10, 15, 20]:
             for seed in [2025]:
                 n, m, sigma = None, None, None
                 
-                strings = readStrings(f"I_{stringlength}_{stringnumber}_{it}.txt")
+                strings = readStrings(f"random/I_{stringlength}_{stringnumber}_{it}.txt")
                 alphabet = {1:"0", 2: "1"}
                 print(f"I_{stringlength}_{stringnumber}_{it}.txt")
                 Csub=1

@@ -14,7 +14,7 @@ for stringlength in [5, 10, 15, 20]:
 
                 n, m, sigma = None, None, None
 
-                with open(f"I_{stringlength}_{stringnumber}_{it}.txt", "r") as f:
+                with open(f"random/I_{stringlength}_{stringnumber}_{it}.txt", "r") as f:
                     lines = f.readlines()
 
                 m = int(lines[1].split("=")[1].strip())
